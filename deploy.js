@@ -1,43 +1,52 @@
-const ethers = require("ethers");
-const fs = require("fs-extra");
-require("dotenv").config();
+const ethers = require("ethers")
+const fs = require("fs-extra")
+require("dotenv").config()
 
 const main = async () => {
-  // Variables setup
-  const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+  // ----- Variables setup -----
+  const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
+  // \/ private key in .env \/
   // const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
-  const encryptedJson = fs.readFileSync("./encryptedKey.json", "utf8");
-  let wallet = new ethers.Wallet.fromEncryptedJsonSync(encryptedJson, process.env.PASSWORD);
+  // \/ encrypted key in json \/
+  const encryptedJson = fs.readFileSync("./encryptedKey.json", "utf8")
+  let wallet = new ethers.Wallet.fromEncryptedJsonSync(encryptedJson, process.env.PASSWORD)
+  wallet = await wallet.connect(provider)
 
-  wallet = await wallet.connect(provider);
+  // ----- Compiled contract -----
+  const abi = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.abi", "utf8")
+  const binary = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.bin", "utf8")
+  const contractFactory = new ethers.ContractFactory(abi, binary, wallet)
 
-  const abi = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.abi", "utf8");
-  const binary = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.bin", "utf8");
+  // ----- Contract Deployment -----
 
-  const contractFactory = new ethers.ContractFactory(abi, binary, wallet);
-  console.log("Deploying...");
+  console.log("Deploying...")
 
-  const contract = await contractFactory.deploy();
-  const transactionReceipt = await contract.deployTransaction.wait(1);
+  // Transaction information
+  const contract = await contractFactory.deploy()
+  console.log("Deployment Transaction: ")
+  console.log(contract.deployTransaction)
 
-  // console.log("Deployment Transaction: ");
-  // console.log(contract.deployTransaction);
+  console.log("Transaction Receipt: ")
+  const transactionReceipt = await contract.deployTransaction.wait(1)
+  // Only comes after you wait(x) for x block confirmations
+  console.log(transactionReceipt)
 
-  // // Only comes after you wait()
-  // console.log("Transaction Receipt: ");
-  // console.log(transactionReceipt);
+  // ----- Interacting with contract -----
+  const transactionResponse = await contract.store("17")
+  console.log(transactionResponse)
 
-  // Store number and get te response
-  const transactionResponse = await contract.store("17");
-  const storeReceipt = await transactionResponse.wait(1);
-  const currentFavoriteNumber = await contract.retrieve();
-  console.log(currentFavoriteNumber.toString());
-};
+  const storeReceipt = await transactionResponse.wait(1)
+  console.log("Store contract call receipt: ")
+  console.log(storeReceipt)
+
+  const currentFavoriteNumber = await contract.retrieve()
+  console.log(`Stored number: ${currentFavoriteNumber.toString()}`)
+}
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.log(error);
-    process.exit(1);
-  });
+    console.log(error)
+    process.exit(1)
+  })
