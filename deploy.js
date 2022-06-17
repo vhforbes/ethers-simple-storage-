@@ -6,12 +6,12 @@ const main = async () => {
   // ----- Variables setup -----
   const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL)
   // \/ private key in .env \/
-  // const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider)
 
   // \/ encrypted key in json \/
-  const encryptedJson = fs.readFileSync("./encryptedKey.json", "utf8")
-  let wallet = new ethers.Wallet.fromEncryptedJsonSync(encryptedJson, process.env.PASSWORD)
-  wallet = await wallet.connect(provider)
+  // const encryptedJson = fs.readFileSync("./encryptedKey.json", "utf8")
+  // let wallet = new ethers.Wallet.fromEncryptedJsonSync(encryptedJson, process.env.PASSWORD)
+  // wallet = await wallet.connect(provider)
 
   // ----- Compiled contract -----
   const abi = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.abi", "utf8")
@@ -26,6 +26,7 @@ const main = async () => {
   const contract = await contractFactory.deploy()
   console.log("Deployment Transaction: ")
   console.log(contract.deployTransaction)
+  console.log(contract.address)
 
   console.log("Transaction Receipt: ")
   const transactionReceipt = await contract.deployTransaction.wait(1)
